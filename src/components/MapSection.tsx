@@ -26,7 +26,7 @@ interface UserLocation {
 // Interface para um Alerta (adaptada do AlertPanel)
 interface MapAlert {
   id: number;
-  type: 'warning' | 'danger' | 'info' | 'default';
+  type: 'critico' | 'danger' | 'warning' | 'low' | 'info';
   message: string;
   locationName: string; // O nome do local digitado no formulário
   lat: number; // Latitude do alerta no mapa
@@ -35,7 +35,7 @@ interface MapAlert {
 }
 
 interface MapSectionProps {
-  isActive: boolean;
+  isActive: boolean; // Indica se o localizador/monitoramento está online
   // Nova prop: alertas a serem exibidos no mapa
   mapAlerts: MapAlert[]; // Lista de alertas com coordenadas
   userLocation: UserLocation | null; // Localização atual do usuário
@@ -70,14 +70,20 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
     let iconAnchor: [number, number] = [12, 41]; // Ponto de ancoragem do ícone
 
     switch (type) {
+      case 'critico':
+        iconUrl = '/leaflet/images/marker-icon-red.png';
+        break;
       case 'danger':
-        iconUrl = '/leaflet/images/marker-icon-red.png'; // Crie seu próprio marcador vermelho
+        iconUrl = '/leaflet/images/marker-icon-orange.png';
         break;
       case 'warning':
-        iconUrl = '/leaflet/images/marker-icon-yellow.png'; // Crie seu próprio marcador amarelo
+        iconUrl = '/leaflet/images/marker-icon-yellow.png';
+        break;
+      case 'low':
+        iconUrl = '/leaflet/images/marker-icon-green.png';
         break;
       case 'info':
-        iconUrl = '/leaflet/images/marker-icon-blue.png'; // Marcador azul (padrão)
+        iconUrl = '/leaflet/images/marker-icon-blue.png';
         break;
       default:
         iconUrl = 'leaflet/images/marker-icon.png'; // Marcador padrão
@@ -115,8 +121,8 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
             <h3 className="text-xl font-bold text-white">Mapa de Segurança</h3>
           </div>
           <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-            isActive 
-              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+            isActive
+              ? 'bg-green-500/20 text-green-400 border border-green-500/30'
               : 'bg-slate-600/50 text-slate-400 border border-slate-600/30'
           }`}>
             {isActive ? 'Monitoramento Ativo' : 'Offline'}
@@ -125,33 +131,45 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
       </div>
 
       {/* Map Area */}
-      <div className="relative h-96"> {/* Removido bg-gradient-to-br e grid pattern, pois o Leaflet cuidará disso */}
+      <div className="relative h-96">
         <MapContainer center={mapCenter} zoom={13} scrollWheelZoom={true} className="h-full w-full rounded-b-2xl">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
+
           {/* Componente para atualizar o centro do mapa dinamicamente */}
           <MapCenterUpdater center={mapCenter} />
 
-          {/* Marcador para a localização do usuário */}
+          {/* Marcador para a localização do usuário (sempre visível se userLocation existe) */}
           {userLocation && (
             <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
               <Popup>Você está aqui!</Popup>
             </Marker>
           )}
 
-          {/* Marcadores para os alertas */}
-          {mapAlerts.map(alert => (
-            <Marker key={alert.id} position={[alert.lat, alert.lng]} icon={getAlertMarkerIcon(alert.type)}>
-              <Popup>
-                <div className="font-semibold text-slate-800">{alert.type === 'danger' ? 'ALERTA DE PERIGO!' : alert.type === 'warning' ? 'ATENÇÃO!' : 'Novo Alerta'}</div>
-                <div className="text-sm text-slate-700">{alert.message}</div>
-                <div className="text-xs text-slate-500 mt-1">{alert.locationName} - {alert.time}</div>
-              </Popup>
-            </Marker>
-          ))}
+          {/* Marcadores para os alertas (RENDERIZADOS APENAS SE 'isActive' FOR TRUE) */}
+          {isActive ? (
+            mapAlerts.map(alert => (
+              <Marker key={alert.id} position={[alert.lat, alert.lng]} icon={getAlertMarkerIcon(alert.type)}>
+                <Popup>
+                  <div className="font-semibold text-slate-800">{
+                    alert.type === 'critico' ? 'ALERTA DE PERIGO IMINENTE!' :
+                    alert.type === 'danger' ? 'ALERTA DE PERIGO!' :
+                    alert.type === 'warning' ? 'ATENÇÃO!' :
+                    alert.type === 'low' ? 'ALERTA DE BAIXO RISCO!' : 'NOVO ALERTA (Informativo)' // Ajustado 'Novo Alerta' para ser mais descritivo
+                  }</div>
+                  <div className="text-sm text-slate-700">{alert.message}</div>
+                  <div className="text-xs text-slate-500 mt-1">{alert.locationName} - {alert.time}</div>
+                </Popup>
+              </Marker>
+            ))
+          ) : (
+            // Mensagem quando o monitoramento está offline
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/70 text-slate-400 text-lg font-semibold z-10 rounded-b-2xl">
+              Monitoramento Offline - Alertas não visíveis
+            </div>
+          )}
         </MapContainer>
       </div>
 
@@ -160,6 +178,10 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
         <div className="flex flex-wrap gap-4 justify-center text-xs">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+            <span className="text-slate-300">Crítico</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
             <span className="text-slate-300">Alto Risco</span>
           </div>
           <div className="flex items-center space-x-2">
@@ -169,6 +191,10 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
             <span className="text-slate-300">Baixo Risco</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <span className="text-slate-300">Informativo</span> {/* Ajustado o nome na legenda */}
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>

@@ -15,7 +15,7 @@ import axios from 'axios';
 // Definição das interfaces (melhor manter em um arquivo separado como types/index.ts)
 interface Alert {
   id: number;
-  type: 'warning' | 'danger' | 'info' | 'default';
+  type: 'critico' | 'danger' | 'warning' | 'low' | 'info';
   message: string;
   time: string;
 }
@@ -27,7 +27,7 @@ interface UserLocation {
 
 interface MapAlert {
   id: number;
-  type: 'warning' | 'danger' | 'info' | 'default';
+  type: 'critico' | 'danger' | 'warning' | 'low' | 'info';
   message: string;
   locationName: string;
   lat: number;

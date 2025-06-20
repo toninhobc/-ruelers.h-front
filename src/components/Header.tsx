@@ -5,10 +5,10 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const menuItems = [
-    { name: 'Início', href: '#home' },
+    { name: 'Início', href: '/' },
     { name: 'Recursos', href: '#features' },
     { name: 'Mapa', href: '#map' },
-    { name: 'Alertas', href: '#alerts' },
+    { name: 'Upload', href: '/upload' },
     { name: 'Contato', href: '#contact' },
   ];
 
