@@ -329,6 +329,7 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ onAddAlert, onAddAlertToMap }) 
           </div>
 
           {/* Campo para Tipo de Ocorrência (Select Box) */}
+          
           <div>
             <label htmlFor="selectedOccurrenceType" className="block text-sm font-semibold text-slate-700 mb-1">Classificação do Alerta:</label>
             <select
@@ -345,6 +346,7 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ onAddAlert, onAddAlertToMap }) 
               <option value="info">Informativo (Azul)</option>
             </select>
           </div>
+          
 
           {/* Campo para Tipo da Ocorrência (Descrição Livre) */}
           <div>
@@ -388,8 +390,12 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ onAddAlert, onAddAlertToMap }) 
           </div>
 
           {/* Campo Localização */}
+          {/* Campo para Localização (Input de texto) */}
           <div>
-            <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">Localização:</label>
+            {/*
+            <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">
+              Localização:
+            </label>
             <input
               type="text"
               id="location"
@@ -397,8 +403,50 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ onAddAlert, onAddAlertToMap }) 
               value={formData.location}
               onChange={handleInputChange}
               placeholder="Ex: SQN 108 Bloco A"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white appearance-none"
+            />*/}
+            <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">Bairro:</label>
+            <select
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white"
-            />
+            >
+              <option value="Arniqueira">Arniqueira</option>
+              <option value="Brasília">Brasília</option>
+              <option value="Brazlândia">Brazlândia</option>
+              <option value="Candangolândia">Candangolândia</option>
+              <option value="Ceilândia">Ceilândia</option>
+              <option value="Cruzeiro">Cruzeiro</option>
+              <option value="Fercal">Fercal</option>
+              <option value="Gama">Gama</option>
+              <option value="Guará">Guará</option>
+              <option value="Itapoã">Itapoã</option>
+              <option value="Jardim Botânico">Jardim Botânico</option>
+              <option value="Lago Norte">Lago Norte</option>
+              <option value="Lago Sul">Lago Sul</option>
+              <option value="Núcleo Bandeirante">Núcleo Bandeirante</option>
+              <option value="Paranoá">Paranoá</option>
+              <option value="Park Way">Park Way</option>
+              <option value="Planaltina">Planaltina</option>
+              <option value="Recanto Das Emas">Recanto Das Emas</option>
+              <option value="Riacho Fundo">Riacho Fundo</option>
+              <option value="Riacho Fundo Ii">Riacho Fundo Ii</option>
+              <option value="Samambaia">Samambaia</option>
+              <option value="Santa Maria">Santa Maria</option>
+              <option value="Scia Estrutural">Scia Estrutural</option>
+              <option value="Sia">Sia</option>
+              <option value="Sobradinho">Sobradinho</option>
+              <option value="Sobradinho Ii">Sobradinho Ii</option>
+              <option value="Sol Nascente">Sol Nascente</option>
+              <option value="Sudoeste Octogonal">Sudoeste Octogonal</option>
+              <option value="São Sebastião">São Sebastião</option>
+              <option value="Taguatinga">Taguatinga</option>
+              <option value="Varjão">Varjão</option>
+              <option value="Vicente Pires">Vicente Pires</option>
+              <option value="Águas Claras">Águas Claras</option>
+            </select>
           </div>
 
         </form>
