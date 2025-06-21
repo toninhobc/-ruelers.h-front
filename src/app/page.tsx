@@ -1,7 +1,7 @@
-// app/page.tsx (ou pages/index.tsx)
+// app/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Importar useRef
 import dynamic from 'next/dynamic';
 import Header from '../../src/components/Header';
 import SecurityButton from '../../src/components/SecurityButton';
@@ -10,11 +10,11 @@ import FeatureCard from '../../src/components/FeatureCard';
 import { Shield, MapPin, Bell, Users, Eye, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid'; // Importe a biblioteca uuid
+import { v4 as uuidv4 } from 'uuid';
 
-// Definição das interfaces (ATUALIZADO: id agora é string)
+// Definição das interfaces
 interface Alert {
-  id: string; // MUDADO PARA STRING
+  id: string;
   type: 'critico' | 'danger' | 'warning' | 'low' | 'info';
   message: string;
   time: string;
@@ -26,14 +26,15 @@ interface UserLocation {
 }
 
 interface MapAlert {
-  id: string; // MUDADO PARA STRING
+  id: string;
   type: 'critico' | 'danger' | 'warning' | 'low' | 'info';
   message: string;
   locationName: string;
   lat: number;
   lng: number;
   time: string;
-  backendId?: number; // NOVO: Para guardar o ID original do banco de dados (number)
+  backendId?: number;
+  probability?: number;
 }
 
 // Carrega o MapSection dinamicamente apenas no cliente
@@ -42,29 +43,21 @@ const DynamicMapSection = dynamic(() => import('../../src/components/MapSection'
   loading: () => <p className="text-white text-center py-8">Carregando mapa...</p>,
 });
 
-const FLASK_BACKEND_URL = 'http://localhost:5002'; // Simulação de usuários protegidos
+const FLASK_BACKEND_URL = 'http://localhost:5002';
 
 export default function Home() {
   const [isSecurityActive, setIsSecurityActive] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [mapAlerts, setMapAlerts] = useState<MapAlert[]>([]);
+  const [mapAlerts, setMapAlerts] = useState<MapAlert[]>([]);// Use este para os alertas do banco de dados
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [qtdUsuariosProtegidos, setQtdUsuariosProtegidos] = useState(() => {
-    if (typeof window !== 'undefined') { // Check if window is defined (i.e., in browser)
-      const savedCount = localStorage.getItem('protectedUsersCount');
-      return savedCount ? parseInt(savedCount, 10) : 1247;
-    }
-    return 1247; // Default for server-side rendering
-  });
 
-  // Effect to save qtdUsuariosProtegidos to localStorage whenever it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('protectedUsersCount', qtdUsuariosProtegidos.toString());
-    }
-  }, [qtdUsuariosProtegidos]);
+  const [crimeProbability, setCrimeProbability] = useState<number | null>(null);
+  const [probabilityCircleLocation, setProbabilityCircleLocation] = useState<UserLocation | null>(null);
 
-  // FUNÇÃO PARA BUSCAR ALERTAS DO BACKEND E POPULAR O MAPA E O PAINEL (ATUALIZADA PARA UUID)
+  // Ref para controlar se a probabilidade da IA já foi buscada para a sessão atual
+  const hasFetchedCrimeProbabilityOnce = useRef(false);
+
+
   const fetchAlertsFromBackend = async () => {
     try {
       const response = await axios.get(`${FLASK_BACKEND_URL}/alertas`);
@@ -96,18 +89,22 @@ export default function Home() {
                 console.error(`Erro ao geocodificar ${item.Localizacao} para lista:`, geoError);
               }
             } else {
-                 console.warn(`Localização inválida ou ausente para alerta ID ${item.id}. Usando coordenadas padrão.`);
+              console.warn(`Localização inválida ou ausente para alerta ID ${item.id}. Usando coordenadas padrão.`);
             }
 
             return {
-              id: uuidv4(), // AGORA USANDO UM UUID ÚNICO PARA O REACT KEY
-              backendId: item.id, // Guarda o ID original do banco, se precisar dele
+              id: uuidv4(),
+              backendId: item.id,
               type: item.ClassificacaoAlerta as MapAlert['type'],
               message: messageContent,
               locationName: item.Localizacao,
               lat: lat,
               lng: lng,
               time: timeFormatted,
+              // *** PONTO CRÍTICO: Garanta que 'ProbabilidadeRisco' venha do seu backend para cada alerta! ***
+              // Se o Flask não enviar isso, o círculo não aparecerá para o alerta.
+              probability: item.ProbabilidadeRisco !== undefined && item.ProbabilidadeRisco !== null
+                           ? parseFloat(item.ProbabilidadeRisco) : undefined,
             };
           })
         );
@@ -118,78 +115,178 @@ export default function Home() {
     }
   };
 
-   const handleToggleSecurity = () => {
-    // Only increment if security is currently INACTIVE and will become ACTIVE
-    if (!isSecurityActive) {
-      setQtdUsuariosProtegidos(prevCount => prevCount + 1);
+  const fetchCrimeProbabilityForUserLocation = async (lat: number, lng: number) => {
+    // Se a probabilidade já foi buscada UMA VEZ para esta sessão de ativação, não faça novamente
+    if (hasFetchedCrimeProbabilityOnce.current) {
+        console.log('Probabilidade da IA já foi buscada. Ignorando nova requisição.');
+        return;
     }
-    // Toggle the security active state
-    setIsSecurityActive(prevIsActive => !prevIsActive);
+
+    let regiao_administrativa = 'Brasília';
+    try {
+      const nominatimReverseUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+      const geoResponse = await axios.get(nominatimReverseUrl, {
+        headers: { 'User-Agent': 'SecurityApp/1.0 (seu_email@exemplo.com)' }
+      });
+
+      if (geoResponse.data && geoResponse.data.address) {
+        regiao_administrativa = geoResponse.data.address.city ||
+          geoResponse.data.address.town ||
+          geoResponse.data.address.village ||
+          geoResponse.data.address.suburb ||
+          geoResponse.data.address.county ||
+          'Região Desconhecida';
+      }
+    } catch (geoError) {
+      console.error('Erro ao geocodificar reversamente para probabilidade:', geoError);
+    }
+
+    const hora_ocorencia = format(new Date(), 'HH:mm');
+
+    try {
+      console.log('Realizando requisição para /alertas-temporeal...');
+      const response = await axios.get(`${FLASK_BACKEND_URL}/alertas-temporeal`, {
+        params: {
+          regiao_administrativa: regiao_administrativa,
+          hora_ocorencia: hora_ocorencia
+        }
+      });
+
+      if (response.data && typeof response.data.risco === 'string') {
+        const probability = parseFloat(response.data.risco);
+        if (!isNaN(probability)) {
+          setCrimeProbability(probability);
+          setProbabilityCircleLocation({ lat, lng });
+          hasFetchedCrimeProbabilityOnce.current = true; // Marca como buscado
+          console.log('Probabilidade da IA obtida e definida:', probability);
+        } else {
+          console.warn('Probabilidade da IA retornada não é um número:', response.data.risco);
+          // Opcional: Você pode definir um fallback ou um valor padrão para crimeProbability aqui
+          // setCrimeProbability(0.2); // Exemplo de fallback
+          // setProbabilityCircleLocation({ lat, lng}); // Usar a localização atual para o fallback
+        }
+      } else if (typeof response.data === 'string' && !isNaN(parseFloat(response.data))) {
+        const probability = parseFloat(response.data);
+        setCrimeProbability(probability);
+        setProbabilityCircleLocation({ lat, lng });
+        hasFetchedCrimeProbabilityOnce.current = true; // Marca como buscado
+        console.log('Probabilidade da IA obtida e definida (formato string):', probability);
+      } else {
+        console.warn('Formato de probabilidade da IA inesperado:', response.data);
+      }
+
+    } catch (error) {
+      console.error('Erro ao buscar probabilidade de crime do backend (IA):', error);
+    }
   };
 
+
   useEffect(() => {
+    // 1. Atualiza os alertas do banco de dados a cada minuto (sempre)
     fetchAlertsFromBackend();
+    const alertsIntervalId = setInterval(fetchAlertsFromBackend, 60000);
 
-    const intervalId = setInterval(fetchAlertsFromBackend, 60000);
+    // 2. Lógica para localização do usuário e probabilidade da IA
+    let watchId: number | undefined;
 
-    if (isSecurityActive) {
-      if (navigator.geolocation) {
-        const watchId = navigator.geolocation.watchPosition(
+    if (navigator.geolocation) {
+      if (isSecurityActive) {
+        // Obter localização inicial imediatamente APENAS ao ativar ou recarregar
+        // E somente se a probabilidade da IA não foi buscada nesta sessão
+        if (!hasFetchedCrimeProbabilityOnce.current) {
+          navigator.geolocation.getCurrentPosition(
+            (initialPosition) => {
+              const currentLat = initialPosition.coords.latitude;
+              const currentLng = initialPosition.coords.longitude;
+              setUserLocation({ lat: currentLat, lng: currentLng });
+              fetchCrimeProbabilityForUserLocation(currentLat, currentLng); // Dispara a busca única da probabilidade
+            },
+            (error) => {
+              console.error('Erro ao obter a localização inicial do usuário:', error);
+              const defaultLat = -15.7801;
+              const defaultLng = -47.9292;
+              setUserLocation({ lat: defaultLat, lng: defaultLng });
+              fetchCrimeProbabilityForUserLocation(defaultLat, defaultLng); // Dispara a busca única com fallback
+            },
+            { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 }
+          );
+        }
+
+        // Observar mudanças de localização para ATUALIZAR APENAS O MARCADOR DO USUÁRIO
+        watchId = navigator.geolocation.watchPosition(
           (position) => {
             setUserLocation({
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             });
+            // NÃO CHAME fetchCrimeProbabilityForUserLocation AQUI! Isso evitará múltiplas requisições.
           },
           (error) => {
-            console.error('Erro ao obter a localização do usuário:', error);
+            console.error('Erro ao observar a localização do usuário:', error);
+            // Fallback para localização padrão se a observação falhar
             setUserLocation({ lat: -15.7801, lng: -47.9292 });
           },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 }
         );
-        return () => navigator.geolocation.clearWatch(watchId);
       } else {
-        setUserLocation({ lat: -15.7801, lng: -47.9292 });
+        // Se o monitoramento for desativado, reseta o flag da probabilidade da IA para que possa ser buscado na próxima ativação
+        hasFetchedCrimeProbabilityOnce.current = false;
+        // Opcional: Se você quer que o círculo da IA SUMA ao desativar o monitoramento, descomente as linhas abaixo.
+        // setCrimeProbability(null);
+        // setProbabilityCircleLocation(null);
+        // Opcional: Limpar userLocation ao desativar o monitoramento
+        setUserLocation(null);
       }
     } else {
-      setUserLocation(null);
+      console.warn('Seu navegador não suporta geolocalização.');
+      // Se não houver geolocalização, ainda tenta buscar a probabilidade com fallback uma vez
+      if (!hasFetchedCrimeProbabilityOnce.current) {
+        const defaultLat = -15.7801;
+        const defaultLng = -47.9292;
+        setUserLocation({ lat: defaultLat, lng: defaultLng });
+        fetchCrimeProbabilityForUserLocation(defaultLat, defaultLng);
+      }
     }
 
-    return () => clearInterval(intervalId);
-  }, [isSecurityActive]);
+    // Função de limpeza do useEffect
+    return () => {
+      if (watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+      clearInterval(alertsIntervalId);
+    };
+  }, [isSecurityActive]); // Dependência em isSecurityActive para (re)ativar/desativar o monitoramento e busca da IA
 
-  // Callback para AlertPanel (onAddAlertToMap) - AGORA ATUALIZADO PARA USAR UUID
   const handleNewAlertForMap = async (alertData: {
-    id: number; // Este ID vem do Flask via resposta POST (agora backendId)
+    id: number;
     type: MapAlert['type'];
     message: string;
     locationName: string;
     lat: number;
     lng: number;
     time: string;
+    probability?: number;
   }) => {
-    // Cria um novo objeto MapAlert com um ID único gerado no frontend
     const newMapAlertWithUniqueKey: MapAlert = {
-      id: uuidv4(), // GERA UM UUID ÚNICO AQUI
-      backendId: alertData.id, // Guarda o ID original do Flask
+      id: uuidv4(),
+      backendId: alertData.id,
       type: alertData.type,
       message: alertData.message,
       locationName: alertData.locationName,
       lat: alertData.lat,
       lng: alertData.lng,
       time: alertData.time,
+      probability: alertData.probability,
     };
     setMapAlerts(prevMapAlerts => [...prevMapAlerts, newMapAlertWithUniqueKey]);
   };
 
-
   const features = [
     { icon: Shield, title: 'Monitoramento 24/7', description: 'Acompanhamento contínuo da sua localização e áreas de risco em tempo real.' },
-    { icon: MapPin, title: 'Mapeamento Inteligente', description: 'Visualize pontos críticos, rotas seguras e áreas com maior incidência.'
-},
+    { icon: MapPin, title: 'Mapeamento Inteligente', description: 'Visualize pontos críticos, rotas seguras e áreas com maior incidência.'},
     { icon: Bell, title: 'Alertas Instantâneos', description: 'Receba notificações imediatas sobre perigos próximos à sua localização.' },
     { icon: Users, title: 'Rede Colaborativa', description: 'Conecte-se com outros usuários e autoridades para maior segurança.' },
-    { icon: Eye, title: 'Inteligência Artificial', description: 'Sistema de integração com IA para análise preditiva de riscos.' },
+    { icon: Eye, title: 'Vigilância Ativa', description: 'Sistema de câmeras e sensores integrados para monitoramento completo.' },
     { icon: Phone, title: 'Emergência Rápida', description: 'Acesso direto aos serviços de emergência com um toque.' }
   ];
 
@@ -218,7 +315,8 @@ export default function Home() {
 
           <SecurityButton
             isActive={isSecurityActive}
-            onToggle={handleToggleSecurity}/>
+            onToggle={() => setIsSecurityActive(!isSecurityActive)}
+          />
         </div>
       </section>
 
@@ -227,15 +325,14 @@ export default function Home() {
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-400 mb-2">{qtdUsuariosProtegidos}</div>
+                <div className="text-3xl font-bold text-green-400 mb-2">1,247</div>
                 <div className="text-slate-400">Usuários Protegidos</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400 mb-2">96.8%</div>
+                <div className="text-3xl font-bold text-blue-400 mb-2">98.7%</div>
                 <div className="text-slate-400">Taxa de Segurança</div>
               </div>
               <div className="text-center">
-                {/* O contador de alertas aqui agora refletirá o tamanho de `mapAlerts` */}
                 <div className="text-3xl font-bold text-red-400 mb-2">{mapAlerts.length}</div>
                 <div className="text-slate-400">Alertas Hoje</div>
               </div>
@@ -247,11 +344,12 @@ export default function Home() {
       <section className="px-4 mb-16">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            {/* DynamicMapSection recebe os alertas do banco */}
             <DynamicMapSection
               isActive={isSecurityActive}
-              userLocation={userLocation}
+              userLocation={isSecurityActive ? userLocation : null}
               mapAlerts={mapAlerts}
+              crimeProbability={crimeProbability}
+              probabilityLocation={probabilityCircleLocation}
             />
           </div>
 
@@ -278,7 +376,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <FeatureCard
-                key={index} // Se features é estático e não muda, index pode ser usado aqui. Se for dinâmico, use um ID único.
+                key={index}
                 icon={feature.icon}
                 title={feature.title}
                 description={feature.description}
@@ -298,8 +396,11 @@ export default function Home() {
             Junte-se a milhares de usuários que já confiam na nossa tecnologia.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="justify-center align-items-center display-flex px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-xl">
+            <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-xl">
               Baixar App
+            </button>
+            <button className="px-8 py-4 bg-slate-800/50 text-white font-semibold rounded-xl border border-slate-600 hover:bg-slate-700/50 transition-all duration-300">
+              Saiba Mais
             </button>
           </div>
         </div>
