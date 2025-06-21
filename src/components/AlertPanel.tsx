@@ -312,25 +312,84 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ onAddAlert, onAddAlertToMap }) 
         confirmButtonText="Enviar Denúncia"
       >
         <form className="space-y-4">
-          {/* Campo para Gênero */}
-          <div>
-            <label htmlFor="gender" className="block text-sm font-semibold text-slate-700 mb-1">Gênero:</label>
-            <select
-              id="gender"
-              name="gender"
-              value={formData.gender}
-              onChange={handleInputChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white"
-            >
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-              <option value="Não desejo informar">Não desejo informar</option>
-            </select>
-          </div>
 
-          {/* Campo para Tipo de Ocorrência (Select Box) */}
-          
-          <div>
+
+            {/* Campo para Tipo de Ocorrência (Select Box) */}
+
+            <div>
+              {/* Campo para Localização (Input de texto) */}
+            <div>
+              {/*
+              <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">
+                Localização:
+              </label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                placeholder="Ex: SQN 108 Bloco A"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white appearance-none"
+              />*/}
+              <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">Bairro:</label>
+              <select
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white"
+              >
+                <option value="Arniqueira">Arniqueira</option>
+                <option value="Brasília">Brasília</option>
+                <option value="Brazlândia">Brazlândia</option>
+                <option value="Candangolândia">Candangolândia</option>
+                <option value="Ceilândia">Ceilândia</option>
+                <option value="Cruzeiro">Cruzeiro</option>
+                <option value="Fercal">Fercal</option>
+                <option value="Gama">Gama</option>
+                <option value="Guará">Guará</option>
+                <option value="Itapoã">Itapoã</option>
+                <option value="Jardim Botânico">Jardim Botânico</option>
+                <option value="Lago Norte">Lago Norte</option>
+                <option value="Lago Sul">Lago Sul</option>
+                <option value="Núcleo Bandeirante">Núcleo Bandeirante</option>
+                <option value="Paranoá">Paranoá</option>
+                <option value="Park Way">Park Way</option>
+                <option value="Planaltina">Planaltina</option>
+                <option value="Recanto Das Emas">Recanto Das Emas</option>
+                <option value="Riacho Fundo">Riacho Fundo</option>
+                <option value="Riacho Fundo II">Riacho Fundo II</option>
+                <option value="Samambaia">Samambaia</option>
+                <option value="Santa Maria">Santa Maria</option>
+                <option value="Scia Estrutural">Scia Estrutural</option>
+                <option value="Sia">Sia</option>
+                <option value="Sobradinho">Sobradinho</option>
+                <option value="Sobradinho II">Sobradinho II</option>
+                <option value="Sol Nascente">Sol Nascente</option>
+                <option value="Sudoeste Octogonal">Sudoeste Octogonal</option>
+                <option value="São Sebastião">São Sebastião</option>
+                <option value="Taguatinga">Taguatinga</option>
+                <option value="Varjão">Varjão</option>
+                <option value="Vicente Pires">Vicente Pires</option>
+                <option value="Águas Claras">Águas Claras</option>
+              </select>
+            </div>
+            {/* Campo para Gênero */}
+            <div className='mb-2'>
+              <label htmlFor="gender" className="block text-sm font-semibold text-slate-700 mb-1">Gênero:</label>
+              <select
+                id="gender"
+                name="gender"
+                value={formData.gender}
+                onChange={handleInputChange}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white"
+              >
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+                <option value="Não desejo informar">Não desejo informar</option>
+              </select>
+            </div>
             <label htmlFor="selectedOccurrenceType" className="block text-sm font-semibold text-slate-700 mb-1">Classificação do Alerta:</label>
             <select
               id="selectedOccurrenceType"
@@ -390,64 +449,7 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ onAddAlert, onAddAlertToMap }) 
           </div>
 
           {/* Campo Localização */}
-          {/* Campo para Localização (Input de texto) */}
-          <div>
-            {/*
-            <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">
-              Localização:
-            </label>
-            <input
-              type="text"
-              id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              placeholder="Ex: SQN 108 Bloco A"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white appearance-none"
-            />*/}
-            <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">Bairro:</label>
-            <select
-              id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white"
-            >
-              <option value="Arniqueira">Arniqueira</option>
-              <option value="Brasília">Brasília</option>
-              <option value="Brazlândia">Brazlândia</option>
-              <option value="Candangolândia">Candangolândia</option>
-              <option value="Ceilândia">Ceilândia</option>
-              <option value="Cruzeiro">Cruzeiro</option>
-              <option value="Fercal">Fercal</option>
-              <option value="Gama">Gama</option>
-              <option value="Guará">Guará</option>
-              <option value="Itapoã">Itapoã</option>
-              <option value="Jardim Botânico">Jardim Botânico</option>
-              <option value="Lago Norte">Lago Norte</option>
-              <option value="Lago Sul">Lago Sul</option>
-              <option value="Núcleo Bandeirante">Núcleo Bandeirante</option>
-              <option value="Paranoá">Paranoá</option>
-              <option value="Park Way">Park Way</option>
-              <option value="Planaltina">Planaltina</option>
-              <option value="Recanto Das Emas">Recanto Das Emas</option>
-              <option value="Riacho Fundo">Riacho Fundo</option>
-              <option value="Riacho Fundo Ii">Riacho Fundo Ii</option>
-              <option value="Samambaia">Samambaia</option>
-              <option value="Santa Maria">Santa Maria</option>
-              <option value="Scia Estrutural">Scia Estrutural</option>
-              <option value="Sia">Sia</option>
-              <option value="Sobradinho">Sobradinho</option>
-              <option value="Sobradinho Ii">Sobradinho Ii</option>
-              <option value="Sol Nascente">Sol Nascente</option>
-              <option value="Sudoeste Octogonal">Sudoeste Octogonal</option>
-              <option value="São Sebastião">São Sebastião</option>
-              <option value="Taguatinga">Taguatinga</option>
-              <option value="Varjão">Varjão</option>
-              <option value="Vicente Pires">Vicente Pires</option>
-              <option value="Águas Claras">Águas Claras</option>
-            </select>
-          </div>
+          
 
         </form>
       </Modal>
