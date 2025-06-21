@@ -7,10 +7,14 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import axios from 'axios'; // Importe o Axios aqui
 
 interface ImageUploadProps {
   onImageUpload: (imageUrl: string) => void;
 }
+
+// URL DO SEU BACKEND FLASK
+const FLASK_BACKEND_URL = 'http://localhost:5002'; // OU o endereço do seu servidor de produção
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload }) => {
   const [dragActive, setDragActive] = useState(false);
@@ -18,7 +22,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload }) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
-  const [category, setCategory] = useState('emergencia'); // REINTRODUZIDO: Estado para a categoria da imagem
+  const [category, setCategory] = useState('emergencia'); // Estado para a categoria da imagem
   const [isUploading, setIsUploading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -62,30 +66,82 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload }) => {
     }
   };
 
+  // FUNÇÃO PARA ENVIAR IMAGENS PARA O BANCO DE DADOS (AGORA REAL)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedImage) return;
+    if (!selectedImage) {
+      alert('Por favor, selecione uma imagem para enviar.');
+      return;
+    }
+    if (!location.trim()) {
+        alert('Por favor, preencha a localização.');
+        return;
+    }
+    if (!description.trim()) {
+        alert('Por favor, preencha a descrição.');
+        return;
+    }
 
     setIsUploading(true);
+    setLocationError(null); // Limpa erros de localização antes de enviar
 
-    setTimeout(() => {
-      if (imagePreview) {
-        onImageUpload(imagePreview);
+    // Criar um objeto FormData para enviar a imagem e os outros dados
+    const formData = new FormData();
+    formData.append('fotoOcorrencia', selectedImage); // O arquivo da imagem
+    formData.append('Categoria', category);           // Categoria selecionada
+    formData.append('Localizacao', location);         // Endereço/coordenadas
+    formData.append('Descricao', description);         // Descrição
+
+    try {
+      // Usar Axios para fazer a requisição POST com FormData
+      const response = await axios.post(`${FLASK_BACKEND_URL}/images`, formData, {
+        headers: {
+          // Axios automaticamente define 'Content-Type': 'multipart/form-data' quando FormData é usado
+          // mas você pode deixá-lo aqui por clareza se preferir.
+          // 'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.status === 201) { // 201 Created é o status de sucesso para POST
+        console.log('Imagem enviada ao Flask com sucesso:', response.data);
+        alert('Imagem de denúncia enviada com sucesso para o backend!');
+
+        // Chamar o callback onImageUpload para o componente pai (se ele usar o preview base64)
+        if (imagePreview) {
+          onImageUpload(imagePreview);
+        }
+
+        // Resetar o formulário após o sucesso
+        setSelectedImage(null);
+        setImagePreview(null);
+        setDescription('');
+        setLocation('');
+        setCategory('emergencia'); // Reset da categoria
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''; // Limpar o input de arquivo
+        }
+      } else {
+        // Axios lança erro para status não-2xx, então este else é um fallback para casos inesperados
+        console.error('Resposta inesperada do servidor:', response);
+        alert('Erro inesperado ao enviar a imagem.');
       }
-
-      // Reset form
-      setSelectedImage(null);
-      setImagePreview(null);
-      setDescription('');
-      setLocation('');
-      setCategory('emergencia'); // REINTRODUZIDO: Reset da categoria
-      setIsUploading(false);
-      setLocationError(null);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response) {
+        // Erro vindo do servidor (ex: 400 Bad Request, 500 Internal Server Error)
+        console.error('Erro ao enviar imagem para o Flask:', error.response.status, error.response.data);
+        alert(`Erro ao enviar imagem: ${error.response.data.message || 'Erro desconhecido do servidor'}`);
+      } else if (axios.isAxiosError(error)) {
+        // Erro de rede (ex: servidor offline, CORS bloqueado)
+        console.error('Erro de rede ou requisição (Axios):', error.message);
+        alert('Erro de conexão com o servidor. Verifique sua conexão ou tente novamente mais tarde.');
+      } else {
+        // Outros erros inesperados
+        console.error('Erro desconhecido:', error);
+        alert('Ocorreu um erro inesperado. Tente novamente.');
       }
-    }, 2000);
+    } finally {
+      setIsUploading(false); // Sempre desativa o estado de upload
+    }
   };
 
   // Função para obter a localização atual e fazer a geocodificação reversa
@@ -109,7 +165,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload }) => {
 
       const response = await fetch(nominatimUrl, {
           headers: {
-              'User-Agent': 'SeuAplicativoDeSeguranca/1.0 (seu.email@exemplo.com)'
+              'User-Agent': 'SeuAplicativoDeSeguranca/1.0 (seu.email@exemplo.com)' // Lembre-se de substituir
           }
       });
 
@@ -151,7 +207,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload }) => {
     }
   };
 
-  // REINTRODUZIDO: Array de categorias para o campo de seleção
   const categories = [
     { value: 'emergencia', label: 'Emergência', color: 'text-red-400' },
     { value: 'infraestrutura', label: 'Infraestrutura', color: 'text-yellow-400' },
@@ -222,7 +277,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload }) => {
               {categories.map((cat) => (
                 <button
                   key={cat.value}
-                  type="button" // Importante para não submeter o formulário
+                  type="button"
                   onClick={() => setCategory(cat.value)}
                   className={`p-4 rounded-xl border-2 transition-all duration-300 text-left ${
                     category === cat.value
@@ -231,7 +286,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload }) => {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    {/* AlertaTriangle aqui, mas você pode escolher um ícone diferente para cada categoria se quiser */}
                     <AlertTriangle className={`w-5 h-5 ${cat.color}`} />
                     <span className="text-white font-medium">{cat.label}</span>
                   </div>

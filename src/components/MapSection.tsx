@@ -1,10 +1,10 @@
 // components/MapSection.tsx
-'use client'; // Necessário porque vamos usar hooks e APIs do navegador
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css'; // Importe o CSS do Leaflet
-import L from 'leaflet'; // Importe o objeto Leaflet para ícones customizados
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import { MapPin } from 'lucide-react';
 
 // Fix para os ícones padrão do Leaflet que quebram com Webpack/Vite
@@ -17,31 +17,29 @@ L.Icon.Default.mergeOptions({
 });
 
 
-// Interface para a localização do usuário
 interface UserLocation {
   lat: number;
   lng: number;
 }
 
-// Interface para um Alerta (adaptada do AlertPanel)
+// Interface para um Alerta (ATUALIZADO: id agora é string)
 interface MapAlert {
-  id: number;
+  id: string; // MUDADO PARA STRING
   type: 'critico' | 'danger' | 'warning' | 'low' | 'info';
   message: string;
-  locationName: string; // O nome do local digitado no formulário
-  lat: number; // Latitude do alerta no mapa
-  lng: number; // Longitude do alerta no mapa
-  time: string; // Hora do alerta
+  locationName: string;
+  lat: number;
+  lng: number;
+  time: string;
+  backendId?: number; // Adicionado para compatibilidade se o pai passar
 }
 
 interface MapSectionProps {
-  isActive: boolean; // Indica se o localizador/monitoramento está online
-  // Nova prop: alertas a serem exibidos no mapa
-  mapAlerts: MapAlert[]; // Lista de alertas com coordenadas
-  userLocation: UserLocation | null; // Localização atual do usuário
+  isActive: boolean;
+  mapAlerts: MapAlert[];
+  userLocation: UserLocation | null;
 }
 
-// Componente auxiliar para centralizar o mapa
 function MapCenterUpdater({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
@@ -51,11 +49,9 @@ function MapCenterUpdater({ center }: { center: [number, number] }) {
 }
 
 const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocation }) => {
-  // Coordenadas iniciais de Brasília (Centro)
   const initialBrasiliaCenter: [number, number] = [-15.7801, -47.9292];
   const [mapCenter, setMapCenter] = useState<[number, number]>(initialBrasiliaCenter);
 
-  // Efeito para atualizar o centro do mapa se a localização do usuário mudar
   useEffect(() => {
     if (userLocation) {
       setMapCenter([userLocation.lat, userLocation.lng]);
@@ -63,11 +59,10 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
   }, [userLocation]);
 
 
-  // Função para determinar o ícone do alerta
   const getAlertMarkerIcon = (type: MapAlert['type']) => {
     let iconUrl = '';
-    let iconSize: [number, number] = [25, 41]; // Tamanho padrão de marcador Leaflet
-    let iconAnchor: [number, number] = [12, 41]; // Ponto de ancoragem do ícone
+    let iconSize: [number, number] = [25, 41];
+    let iconAnchor: [number, number] = [12, 41];
 
     switch (type) {
       case 'critico':
@@ -86,24 +81,23 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
         iconUrl = '/leaflet/images/marker-icon-blue.png';
         break;
       default:
-        iconUrl = 'leaflet/images/marker-icon.png'; // Marcador padrão
+        iconUrl = '/leaflet/images/marker-icon.png';
         break;
     }
 
     return L.icon({
       iconUrl: iconUrl,
-      iconRetinaUrl: iconUrl, // Use a mesma URL para retina se não tiver uma separada
+      iconRetinaUrl: iconUrl,
       shadowUrl: 'leaflet/images/marker-shadow.png',
       iconSize: iconSize,
       iconAnchor: iconAnchor,
-      popupAnchor: [1, -34], // Ajuste o popup para aparecer acima do ícone
+      popupAnchor: [1, -34],
     });
   };
 
-  // Ícone customizado para a localização do usuário (se necessário, ou use o padrão azul)
   const userIcon = L.icon({
-    iconUrl: 'leaflet/images/marker-icon-blue.png', // Ou crie um ícone especial para o usuário
-    iconRetinaUrl: 'leaflet/images/marker-icon-2x.png',
+    iconUrl: 'leaflet/images/marker-icon-blue.png',
+    iconRetinaUrl: 'leaflet/images/marker-icon.png', // Corrigido para 2x se existir
     shadowUrl: 'leaflet/images/marker-shadow.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
@@ -157,7 +151,7 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
                     alert.type === 'critico' ? 'ALERTA DE PERIGO IMINENTE!' :
                     alert.type === 'danger' ? 'ALERTA DE PERIGO!' :
                     alert.type === 'warning' ? 'ATENÇÃO!' :
-                    alert.type === 'low' ? 'ALERTA DE BAIXO RISCO!' : 'NOVO ALERTA (Informativo)' // Ajustado 'Novo Alerta' para ser mais descritivo
+                    alert.type === 'low' ? 'ALERTA DE BAIXO RISCO!' : 'NOVO ALERTA (Informativo)'
                   }</div>
                   <div className="text-sm text-slate-700">{alert.message}</div>
                   <div className="text-xs text-slate-500 mt-1">{alert.locationName} - {alert.time}</div>
@@ -194,7 +188,7 @@ const MapSection: React.FC<MapSectionProps> = ({ isActive, mapAlerts, userLocati
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-slate-300">Informativo</span> {/* Ajustado o nome na legenda */}
+            <span className="text-slate-300">Informativo</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>

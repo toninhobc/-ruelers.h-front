@@ -6,10 +6,8 @@ const Header = () => {
 
   const menuItems = [
     { name: 'Início', href: '/' },
-    { name: 'Recursos', href: '#features' },
-    { name: 'Mapa', href: '#map' },
+    { name: 'Emergência', href: '/emergency' },
     { name: 'Upload', href: '/upload' },
-    { name: 'Contato', href: '#contact' },
   ];
 
   return (
