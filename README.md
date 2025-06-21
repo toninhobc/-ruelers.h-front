@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Projeto: Aplicativo de Alerta e Prevenção de Risco (Front-end)
 
-## Getting Started
+Este projeto de front-end tem como objetivo criar um aplicativo móvel (ou web responsivo) que permite aos usuários enviar alertas de ocorrências, compartilhar sua localização em tempo real, acionar um botão de pânico e contribuir com imagens. Ele também visa integrar-se com uma API de backend para fornecer análises de risco de crimes baseadas em IA.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Visão Geral e Funcionalidades Principais
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* **Geolocalização em Tempo Real:** Obtenção e exibição da localização atual do usuário via GPS.
+* **Botão de Pânico:** Um botão de fácil acesso que, ao ser acionado, envia um alerta de emergência com a localização do usuário para contatos pré-definidos ou autoridades (via backend).
+* **Envio de Alertas de Ocorrências:** Formulário para o usuário detalhar uma ocorrência (tipo, descrição, etc.) e enviá-la para a API.
+* **Upload de Imagens:** Capacidade de anexar fotos às ocorrências, seja tirando uma nova foto ou selecionando da galeria.
+* **Mapa Interativo:** Exibição da localização do usuário e, opcionalmente, de alertas próximos em um mapa.
+* **Previsão de Risco de Crimes (IA):** Integração com o endpoint da API para exibir a probabilidade de risco de crimes na localização atual do usuário ou em uma área específica.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tecnologias Recomendadas
 
-## Learn More
+Para este tipo de aplicação, **Next Js** é altamente recomendado por sua capacidade de criar aplicações a partir de uma única base de código, com acesso robusto a recursos nativos como GPS e câmera.
 
-To learn more about Next.js, take a look at the following resources:
+* **Framework:** **Next js**
+* **Mapas:** `open-street-maps` (para integração com localização)
+* **Geolocalização:** `nominatin para referenciamento em lugares reais utilizando coordenadas`
+* **Requisições HTTP:** `Axios`
+* **Navegação:** `React Navigation`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Primeiros Passos
 
-## Deploy on Vercel
+Siga estas instruções para configurar e executar o aplicativo front-end localmente.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Instalação
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1.  Clone este repositório:
+    ```bash
+    git clone [https://github.com/seu-usuario/seu-projeto-frontend.git](https://github.com/seu-usuario/seu-projeto-frontend.git)
+    cd seu-projeto-frontend
+    ```
+2.  Instale as dependências:
+    ```bash
+    npm install
+    # ou
+    # yarn install
+    ```
+
+### Variáveis de Ambiente (Opcional, mas Recomendado)
+
+Se a sua API de backend estiver hospedada em outro lugar que não seja `http://localhost:5002` (como será em produção), crie um arquivo `.env` na raiz do seu projeto
