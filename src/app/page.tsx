@@ -42,13 +42,27 @@ const DynamicMapSection = dynamic(() => import('../../src/components/MapSection'
   loading: () => <p className="text-white text-center py-8">Carregando mapa...</p>,
 });
 
-const FLASK_BACKEND_URL = 'http://localhost:5002';
+const FLASK_BACKEND_URL = 'http://localhost:5002'; // Simulação de usuários protegidos
 
 export default function Home() {
   const [isSecurityActive, setIsSecurityActive] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [mapAlerts, setMapAlerts] = useState<MapAlert[]>([]);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [qtdUsuariosProtegidos, setQtdUsuariosProtegidos] = useState(() => {
+    if (typeof window !== 'undefined') { // Check if window is defined (i.e., in browser)
+      const savedCount = localStorage.getItem('protectedUsersCount');
+      return savedCount ? parseInt(savedCount, 10) : 1247;
+    }
+    return 1247; // Default for server-side rendering
+  });
+
+  // Effect to save qtdUsuariosProtegidos to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('protectedUsersCount', qtdUsuariosProtegidos.toString());
+    }
+  }, [qtdUsuariosProtegidos]);
 
   // FUNÇÃO PARA BUSCAR ALERTAS DO BACKEND E POPULAR O MAPA E O PAINEL (ATUALIZADA PARA UUID)
   const fetchAlertsFromBackend = async () => {
@@ -102,6 +116,15 @@ export default function Home() {
     } catch (error) {
       console.error('Erro ao buscar alertas do backend:', error);
     }
+  };
+
+   const handleToggleSecurity = () => {
+    // Only increment if security is currently INACTIVE and will become ACTIVE
+    if (!isSecurityActive) {
+      setQtdUsuariosProtegidos(prevCount => prevCount + 1);
+    }
+    // Toggle the security active state
+    setIsSecurityActive(prevIsActive => !prevIsActive);
   };
 
   useEffect(() => {
@@ -166,7 +189,7 @@ export default function Home() {
 },
     { icon: Bell, title: 'Alertas Instantâneos', description: 'Receba notificações imediatas sobre perigos próximos à sua localização.' },
     { icon: Users, title: 'Rede Colaborativa', description: 'Conecte-se com outros usuários e autoridades para maior segurança.' },
-    { icon: Eye, title: 'Vigilância Ativa', description: 'Sistema de câmeras e sensores integrados para monitoramento completo.' },
+    { icon: Eye, title: 'Inteligência Artificial', description: 'Sistema de integração com IA para análise preditiva de riscos.' },
     { icon: Phone, title: 'Emergência Rápida', description: 'Acesso direto aos serviços de emergência com um toque.' }
   ];
 
@@ -195,8 +218,7 @@ export default function Home() {
 
           <SecurityButton
             isActive={isSecurityActive}
-            onToggle={() => setIsSecurityActive(!isSecurityActive)}
-          />
+            onToggle={handleToggleSecurity}/>
         </div>
       </section>
 
@@ -205,11 +227,11 @@ export default function Home() {
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-400 mb-2">1,247</div>
+                <div className="text-3xl font-bold text-green-400 mb-2">{qtdUsuariosProtegidos}</div>
                 <div className="text-slate-400">Usuários Protegidos</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400 mb-2">98.7%</div>
+                <div className="text-3xl font-bold text-blue-400 mb-2">96.8%</div>
                 <div className="text-slate-400">Taxa de Segurança</div>
               </div>
               <div className="text-center">
@@ -276,11 +298,8 @@ export default function Home() {
             Junte-se a milhares de usuários que já confiam na nossa tecnologia.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-xl">
+            <button className="justify-center align-items-center display-flex px-10 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-xl">
               Baixar App
-            </button>
-            <button className="px-8 py-4 bg-slate-800/50 text-white font-semibold rounded-xl border border-slate-600 hover:bg-slate-700/50 transition-all duration-300">
-              Saiba Mais
             </button>
           </div>
         </div>
