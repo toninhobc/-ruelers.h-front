@@ -7,6 +7,7 @@ import Header from '../../src/components/Header';
 import SecurityButton from '../../src/components/SecurityButton';
 import AlertPanel from '../../src/components/AlertPanel';
 import FeatureCard from '../../src/components/FeatureCard';
+import RiskPopup from '../../src/components/RiskPopup';
 import { Shield, MapPin, Bell, Users, Eye, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -44,6 +45,7 @@ const DynamicMapSection = dynamic(() => import('../../src/components/MapSection'
 });
 
 const FLASK_BACKEND_URL = 'http://localhost:5002';
+const FLASK_AI_URL = 'http://localhost:1801';
 
 export default function Home() {
   const [isSecurityActive, setIsSecurityActive] = useState(false);
@@ -56,6 +58,9 @@ export default function Home() {
 
   // Ref para controlar se a probabilidade da IA já foi buscada para a sessão atual
   const hasFetchedCrimeProbabilityOnce = useRef(false);
+
+  // Estado para controlar a visibilidade do pop-up
+  const [isPopupVisible, setIsPopupVisible] = useState(true); // TODO: ALTERAR ISSO !!!!!!!!!!!!!!!!!!!!!!!!
 
 
   const fetchAlertsFromBackend = async () => {
@@ -122,7 +127,7 @@ export default function Home() {
         return;
     }
 
-    let regiao_administrativa = 'Brasília';
+    let regiao_administrativa = 'Arniqueiras';
     try {
       const nominatimReverseUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
       const geoResponse = await axios.get(nominatimReverseUrl, {
@@ -130,34 +135,38 @@ export default function Home() {
       });
 
       if (geoResponse.data && geoResponse.data.address) {
-        regiao_administrativa = geoResponse.data.address.city ||
-          geoResponse.data.address.town ||
+          regiao_administrativa = geoResponse.data.address.town ||
+          geoResponse.data.address.city ||
           geoResponse.data.address.village ||
           geoResponse.data.address.suburb ||
           geoResponse.data.address.county ||
           'Região Desconhecida';
       }
+      console.log("REGIAO ADM DO geoResponse: " + regiao_administrativa);
     } catch (geoError) {
       console.error('Erro ao geocodificar reversamente para probabilidade:', geoError);
     }
 
-    const hora_ocorencia = format(new Date(), 'HH:mm');
+    const hora_ocorrencia = format(new Date(), 'HH:mm');
 
     try {
-      console.log('Realizando requisição para /alertas-temporeal...');
-      const response = await axios.get(`${FLASK_BACKEND_URL}/alertas-temporeal`, {
+      console.log('Realizando requisição para /risco-bairro...');
+      const response = await axios.get(`${FLASK_AI_URL}/risco-bairro`, {
         params: {
-          regiao_administrativa: regiao_administrativa,
-          hora_ocorencia: hora_ocorencia
+          regiao_administrativa,
+          hora_ocorrencia
         }
       });
+      console.log(response)
 
-      if (response.data && typeof response.data.risco === 'string') {
+
+      if (response.data && typeof response.data.risco === 'number') {
         const probability = parseFloat(response.data.risco);
         if (!isNaN(probability)) {
           setCrimeProbability(probability);
           setProbabilityCircleLocation({ lat, lng });
           hasFetchedCrimeProbabilityOnce.current = true; // Marca como buscado
+          setIsPopupVisible(true); 
           console.log('Probabilidade da IA obtida e definida:', probability);
         } else {
           console.warn('Probabilidade da IA retornada não é um número:', response.data.risco);
@@ -236,6 +245,7 @@ export default function Home() {
         // setProbabilityCircleLocation(null);
         // Opcional: Limpar userLocation ao desativar o monitoramento
         setUserLocation(null);
+        setIsPopupVisible(false);
       }
     } else {
       console.warn('Seu navegador não suporta geolocalização.');
@@ -405,6 +415,19 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {crimeProbability !== null && (
+        <RiskPopup
+          isVisible={isPopupVisible}
+          // IMPORTANTE: Seu backend retorna uma probabilidade (ex: 0.75), 
+          // mas o componente espera uma porcentagem (ex: 75).
+          percentage={crimeProbability * 100}
+          onClose={() => setIsPopupVisible(false)} // Permite que o usuário feche o pop-up
+        />
+      )}
+      
+
+        
     </div>
   );
 }
